@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cotizador Gran Caimán</title>
+<meta name="description" content="Generador de cotizaciones en PDF del Hotel Gran Caimán, La Manzanilla del Mar, Jalisco.">
+<meta name="theme-color" content="#2f8f52">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐊</text></svg>">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<header class="barra">
+  <div class="logo" aria-hidden="true">🐊</div>
+  <h1>Cotizador Gran Caimán<small>La Manzanilla del Mar, Jalisco</small></h1>
+  <button class="tema" id="btn-tema" type="button" title="Cambiar tema" aria-label="Cambiar tema">◐</button>
+</header>
+
+<div class="envoltura">
+
+  <!-- ------------------------- Formulario ------------------------- -->
+  <div class="col-form">
+
+    <section class="tarjeta">
+      <h2><span class="num">1</span> Datos del cliente y fechas</h2>
+      <div class="cuerpo">
+        <div class="campo" style="margin-bottom:12px">
+          <label for="cliente">Nombre del cliente</label>
+          <input type="text" id="cliente" placeholder="Ej. Juan Pérez López" autocomplete="off">
+        </div>
+        <div class="rejilla">
+          <div class="campo">
+            <label for="fechaDocumento">Fecha de la cotización</label>
+            <input type="date" id="fechaDocumento">
+          </div>
+          <div class="campo">
+            <label for="fechaEntrada">Entrada</label>
+            <input type="date" id="fechaEntrada">
+          </div>
+          <div class="campo">
+            <label for="fechaSalida">Salida</label>
+            <input type="date" id="fechaSalida">
+          </div>
+          <div class="campo">
+            <label for="noches">Noches</label>
+            <input type="number" id="noches" min="1" step="1" inputmode="numeric">
+            <span class="ayuda" id="ayuda-noches">Se calcula solo</span>
+          </div>
+          <div class="campo">
+            <label for="personas">Personas</label>
+            <input type="number" id="personas" min="0" step="1" inputmode="numeric">
+            <span class="ayuda" id="ayuda-personas">Se calcula solo</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="tarjeta">
+      <h2><span class="num">2</span> Habitaciones</h2>
+      <div class="cuerpo">
+        <p class="ayuda" style="margin:0 0 12px">
+          Pon cuántas habitaciones de cada tipo le vas a cotizar. Las que dejes en
+          <b>0</b> no salen en el PDF. Puedes cambiar tarifas y descripciones.
+        </p>
+        <div id="habitaciones"></div>
+        <button class="btn ancho" id="btn-agregar" type="button">+ Agregar otro tipo</button>
+      </div>
+    </section>
+
+    <section class="tarjeta">
+      <h2><span class="num">3</span> Totales</h2>
+      <div class="cuerpo">
+        <div class="campo" style="max-width:220px">
+          <label for="anticipoPct">Anticipo para reservar (%)</label>
+          <input type="number" id="anticipoPct" min="0" max="100" step="1" inputmode="numeric">
+        </div>
+        <div class="totales" id="totales"></div>
+      </div>
+    </section>
+
+    <details class="tarjeta">
+      <summary>Textos del documento</summary>
+      <div class="cuerpo">
+        <div class="campo" style="margin-bottom:14px">
+          <label for="servicios">Servicios incluidos</label>
+          <textarea id="servicios" rows="7" spellcheck="false"></textarea>
+          <span class="ayuda">Un servicio por renglón. El guion se agrega solo.</span>
+        </div>
+        <div class="campo">
+          <label for="condiciones">Condiciones generales</label>
+          <textarea id="condiciones" rows="8" spellcheck="false"></textarea>
+          <span class="ayuda">Una condición por renglón.</span>
+        </div>
+      </div>
+    </details>
+
+    <details class="tarjeta">
+      <summary>Datos del hotel y firma</summary>
+      <div class="cuerpo">
+        <div class="rejilla" style="margin-bottom:14px">
+          <div class="campo"><label for="hotelNombre">Encabezado</label>
+            <input type="text" id="hotelNombre"></div>
+          <div class="campo"><label for="hotelDireccion">Dirección</label>
+            <input type="text" id="hotelDireccion"></div>
+          <div class="campo"><label for="hotelTelefono">Teléfono</label>
+            <input type="text" id="hotelTelefono"></div>
+          <div class="campo"><label for="hotelCorreo">Correo</label>
+            <input type="text" id="hotelCorreo"></div>
+        </div>
+        <div class="rejilla">
+          <div class="campo"><label for="firmaNombre">Firma: nombre</label>
+            <input type="text" id="firmaNombre"></div>
+          <div class="campo"><label for="firmaHotel">Firma: hotel</label>
+            <input type="text" id="firmaHotel"></div>
+          <div class="campo"><label for="firmaCelular">Firma: celular</label>
+            <input type="text" id="firmaCelular"></div>
+          <div class="campo"><label for="firmaTelefono">Firma: teléfono</label>
+            <input type="text" id="firmaTelefono"></div>
+        </div>
+      </div>
+    </details>
+
+    <section class="tarjeta">
+      <h2><span class="num">4</span> Generar y enviar</h2>
+      <div class="cuerpo">
+        <div class="campo" style="margin-bottom:12px">
+          <label for="tel">WhatsApp del cliente <span style="font-weight:400">(opcional)</span></label>
+          <input type="tel" id="tel" placeholder="Ej. 33 1234 5678" inputmode="tel" autocomplete="off">
+          <span class="ayuda">Sin lada 52; se agrega sola. Vacío = eliges el chat en WhatsApp.</span>
+        </div>
+        <div class="acciones acciones-escritorio">
+          <button class="btn primario ancho" id="btn-pdf" type="button">Descargar PDF</button>
+          <button class="btn wa ancho" id="btn-wa" type="button">Enviar por WhatsApp</button>
+        </div>
+        <div class="aviso" id="aviso" hidden></div>
+        <div class="aviso" id="aviso-guardado" style="margin-top:10px">
+          Las tarifas y los textos se guardan en este dispositivo.
+          <button class="btn" id="btn-reset" type="button"
+                  style="margin-top:8px;min-height:34px;padding:6px 12px;font-size:13px">
+            Restaurar valores originales
+          </button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ------------------------- Vista previa ------------------------- -->
+  <div class="col-vista">
+    <div class="vista-cab">
+      <h2>Vista previa</h2>
+      <span class="nota">Así se ve el PDF</span>
+    </div>
+    <div id="lienzo"></div>
+  </div>
+</div>
+
+<div class="barra-accion">
+  <button class="btn primario" id="btn-pdf-movil" type="button">Descargar PDF</button>
+  <button class="btn wa" id="btn-wa-movil" type="button">WhatsApp</button>
+</div>
+
+<p class="pie">Hotel Gran Caimán · Lázaro Cárdenas No. 24, La Manzanilla del Mar, Jalisco</p>
+
+<script src="vendor/jspdf.umd.min.js"></script>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

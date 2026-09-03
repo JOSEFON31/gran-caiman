@@ -1,0 +1,35 @@
+<!doctype html>
+<!-- Visor de desarrollo: renderiza un PDF a canvas para revisarlo a ojo.
+     Uso: http://localhost:4173/tools/visor.html#f=salida-caso1.pdf&s=1.6&p=2 -->
+<meta charset="utf-8">
+<title>Visor de prueba</title>
+<style>
+  body { margin: 0; background: #555; font: 12px system-ui; }
+  .p { margin: 10px auto; display: block; background: #fff; box-shadow: 0 2px 12px #0008; }
+  #err { color: #fff; padding: 20px; white-space: pre-wrap; }
+</style>
+<div id="err"></div>
+<div id="out"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+const q = new URLSearchParams(location.hash.slice(1));
+const archivo = q.get('f') || 'salida-caso1.pdf';
+const escala = parseFloat(q.get('s') || '1.5');
+const soloPagina = q.get('p') ? parseInt(q.get('p'), 10) : null;
+
+pdfjsLib.getDocument(archivo).promise.then(async (pdf) => {
+  for (let n = 1; n <= pdf.numPages; n++) {
+    if (soloPagina && n !== soloPagina) continue;
+    const page = await pdf.getPage(n);
+    const vp = page.getViewport({ scale: escala });
+    const c = document.createElement('canvas');
+    c.className = 'p';
+    c.width = vp.width; c.height = vp.height;
+    document.getElementById('out').appendChild(c);
+    await page.render({ canvasContext: c.getContext('2d'), viewport: vp }).promise;
+  }
+  document.title = 'listo ' + pdf.numPages + 'p';
+}).catch((e) => { document.getElementById('err').textContent = 'ERROR: ' + e.message; });
+</script>

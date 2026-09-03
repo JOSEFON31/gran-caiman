@@ -1,0 +1,16 @@
+{
+  "name": "gran-caiman-cotizador",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Cotizador web del Hotel Gran Caiman",
+  "scripts": {
+    "test": "node tools/test-pdf.js",
+    "dev": "serve -l 4173 ."
+  },
+  "devDependencies": {
+    "jspdf": "2.5.1",
+    "serve": "^14.2.6"
+  },
+  "homepage": "https://josefon31.github.io/gran-caiman/"
+}
