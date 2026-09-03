@@ -20,6 +20,12 @@ En el celular, "Enviar por WhatsApp" abre el menú de compartir con el PDF ya ad
 En la laptop descarga el PDF y abre WhatsApp Web con el mensaje escrito, para que ahí
 adjuntes el archivo.
 
+### Dejarlo como app en el celular
+
+Abre el link en el celular y usa **Agregar a pantalla de inicio** (Compartir → Agregar a
+pantalla de inicio en iPhone; menú ⋮ → Agregar a pantalla de inicio en Android). Queda con
+el logo del hotel y abre a pantalla completa, como una app.
+
 Las tarifas y los textos que edites se guardan **en ese dispositivo**, así no hay que
 volver a capturarlos. El botón "Restaurar valores originales" los regresa a como estaban.
 Los datos del cliente no se guardan.
@@ -36,6 +42,8 @@ Sitio estático, sin servidor ni base de datos. El PDF se arma en el navegador c
 | `js/pdf.js` | Arma el PDF con la geometría exacta del documento original |
 | `js/app.js` | Formulario, cálculos, vista previa y compartir |
 | `img/sidebar.jpg` | La barra verde con logo y foto |
+| `img/icon-*.png` | Iconos para pantalla de inicio, recortados del logo |
+| `manifest.webmanifest` | Para instalarla como app en el celular |
 | `vendor/` | jsPDF 2.5.1 (copia local, no se baja de internet) |
 | `tools/` | Pruebas, no forman parte del sitio |
 
