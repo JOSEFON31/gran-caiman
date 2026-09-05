@@ -24,13 +24,13 @@ nativa de compartir puede adjuntar archivos, y no todos los navegadores la imple
 | Dónde | Qué pasa |
 |---|---|
 | iPhone y Android | Abre el menú de compartir con el **PDF ya adjunto** |
-| Mac con **Safari** | Igual: PDF ya adjunto |
-| Mac con Chrome o Firefox | Baja el PDF, copia el mensaje y abre WhatsApp; el archivo se adjunta a mano |
-| Windows | Igual que Chrome en Mac |
+| Cualquier computadora (Mac o Windows, Safari incluido) | Baja el PDF, copia el mensaje y abre WhatsApp; el archivo se arrastra a mano |
 
-Ningún navegador de escritorio permite que una página adjunte archivos a WhatsApp Web,
-así que ese paso manual no se puede evitar — en Mac se resuelve usando Safari. La página
-avisa debajo del botón qué va a hacer en ese dispositivo.
+En escritorio el paso manual **no se puede evitar**: ningún navegador de computadora
+implementa compartir archivos, y Safari de Mac tampoco (comprobado en septiembre de 2026,
+pese a lo que sugieren varias tablas de compatibilidad). La página no anuncia navegadores
+por nombre: le pregunta al navegador con `navigator.canShare({files})` y muestra debajo
+del botón lo que conteste.
 
 ### Dejarlo como app en el celular
 

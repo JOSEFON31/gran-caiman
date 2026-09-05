@@ -363,8 +363,11 @@ function mensajeHTML(html, tipo) {
 
 /**
  * ¿Este navegador puede mandar el PDF ya adjunto por la hoja de compartir?
- * Sí: Safari (Mac y iPhone), Chrome en Android. No: Chrome/Firefox de escritorio,
- * que no implementan compartir archivos — ahí toca adjuntarlo a mano.
+ * Sí: Safari en iPhone/iPad y Chrome en Android. No: los navegadores de escritorio,
+ * Safari de Mac incluido (comprobado) — ahí toca adjuntarlo a mano.
+ *
+ * Por eso no se anuncia ningún navegador por nombre: se pregunta al navegador y se
+ * dice lo que conteste, que es lo único confiable.
  */
 function puedeAdjuntar() {
   try {
@@ -490,8 +493,8 @@ async function alCompartir() {
     `<li>Clic en el <b>clip 📎</b> → Documento → elige <b>${esc(nombre)}</b> en Descargas.</li>` +
     `</ol>` +
     (esMac()
-      ? `<div style="margin-top:8px">Tip: en Mac, si abres esta página en <b>Safari</b>, ` +
-        `el botón manda el PDF ya adjunto sin este paso.</div>`
+      ? `<div style="margin-top:8px">En Mac lo más rápido es <b>arrastrar</b> el PDF ` +
+        `desde Descargas (la flecha ⤓ arriba a la derecha) hasta la conversación.</div>`
       : ''),
     'ok',
   );
@@ -505,9 +508,9 @@ function pintarPistaCompartir() {
     pista.textContent = 'Se abre el menú de compartir con el PDF ya adjunto.';
     return;
   }
-  pista.textContent = esMac()
-    ? 'Este navegador no adjunta archivos: baja el PDF y lo adjuntas a mano. En Safari sí lo adjunta solo.'
-    : 'Este navegador no adjunta archivos: baja el PDF y lo adjuntas a mano.';
+  pista.textContent =
+    'En computadora ningún navegador deja adjuntar archivos solo: se baja el PDF, '
+    + 'se copia el mensaje y tú lo arrastras a la conversación. Desde el celular sí va adjunto.';
 }
 
 // --------------------------------------------------------------------------
