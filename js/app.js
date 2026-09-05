@@ -368,7 +368,8 @@ function mensajeHTML(html, tipo) {
  */
 function puedeAdjuntar() {
   try {
-    const prueba = new File([new Blob([''], { type: 'application/pdf' })], 'p.pdf',
+    // El blob va con contenido: con 0 bytes hay implementaciones que dicen que no.
+    const prueba = new File([new Blob(['%PDF-1.3'], { type: 'application/pdf' })], 'p.pdf',
       { type: 'application/pdf' });
     return !!(navigator.canShare && navigator.canShare({ files: [prueba] }));
   } catch (e) {
