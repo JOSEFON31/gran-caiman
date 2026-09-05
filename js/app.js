@@ -354,6 +354,42 @@ function mensaje(texto, tipo) {
   caja.hidden = !texto;
 }
 
+function mensajeHTML(html, tipo) {
+  const caja = $('aviso');
+  caja.innerHTML = html;
+  caja.className = 'aviso' + (tipo ? ' ' + tipo : '');
+  caja.hidden = !html;
+}
+
+/**
+ * ¿Este navegador puede mandar el PDF ya adjunto por la hoja de compartir?
+ * Sí: Safari (Mac y iPhone), Chrome en Android. No: Chrome/Firefox de escritorio,
+ * que no implementan compartir archivos — ahí toca adjuntarlo a mano.
+ */
+function puedeAdjuntar() {
+  try {
+    const prueba = new File([new Blob([''], { type: 'application/pdf' })], 'p.pdf',
+      { type: 'application/pdf' });
+    return !!(navigator.canShare && navigator.canShare({ files: [prueba] }));
+  } catch (e) {
+    return false;
+  }
+}
+
+// navigator.platform está deprecado y puede venir vacío, así que también se mira
+// el userAgent. El iPad se anuncia como "MacIntel", de ahí el filtro por táctil.
+const esMac = () =>
+  /Mac/i.test(navigator.platform || navigator.userAgent || '') && !('ontouchend' in document);
+
+async function copiarTexto(texto) {
+  try {
+    await navigator.clipboard.writeText(texto);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
 function validar() {
   if (!cotizadas(state.habitaciones).length) {
     return 'Pon al menos una habitación con cantidad mayor a 0.';
@@ -440,9 +476,37 @@ async function alCompartir() {
     }
   }
 
+  // Plan B (Chrome/Firefox de escritorio): se baja el PDF, se copia el mensaje
+  // y se abre WhatsApp. El adjunto hay que arrastrarlo a mano: ningún navegador
+  // de escritorio deja que una página adjunte archivos a WhatsApp Web.
   descargar(blob, nombre);
+  const copiado = await copiarTexto(resumenWhatsApp());
   window.open(urlWhatsApp(), '_blank', 'noopener');
-  mensaje(`Se descargó ${nombre} y se abrió WhatsApp. Adjunta ahí el PDF descargado.`, 'ok');
+  mensajeHTML(
+    `<b>Ya se descargó el PDF.</b> Falta adjuntarlo en WhatsApp:` +
+    `<ol style="margin:8px 0 0;padding-left:20px">` +
+    `<li>${copiado ? 'Pega el mensaje con <b>Ctrl/Cmd + V</b>' : 'Escribe el mensaje'}.</li>` +
+    `<li>Clic en el <b>clip 📎</b> → Documento → elige <b>${esc(nombre)}</b> en Descargas.</li>` +
+    `</ol>` +
+    (esMac()
+      ? `<div style="margin-top:8px">Tip: en Mac, si abres esta página en <b>Safari</b>, ` +
+        `el botón manda el PDF ya adjunto sin este paso.</div>`
+      : ''),
+    'ok',
+  );
+}
+
+/** Avisa de antemano si este navegador podrá adjuntar el PDF o no. */
+function pintarPistaCompartir() {
+  const pista = $('pista-wa');
+  if (!pista) return;
+  if (puedeAdjuntar()) {
+    pista.textContent = 'Se abre el menú de compartir con el PDF ya adjunto.';
+    return;
+  }
+  pista.textContent = esMac()
+    ? 'Este navegador no adjunta archivos: baja el PDF y lo adjuntas a mano. En Safari sí lo adjunta solo.'
+    : 'Este navegador no adjunta archivos: baja el PDF y lo adjuntas a mano.';
 }
 
 // --------------------------------------------------------------------------
@@ -617,6 +681,7 @@ function iniciar() {
   volcarEstadoAlFormulario();
   conectar();
   refrescar();
+  pintarPistaCompartir();
   cargarBarraLateral();
 }
 

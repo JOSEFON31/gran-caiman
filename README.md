@@ -16,9 +16,21 @@ Funciona en celular y en laptop (Windows o Mac). No necesita instalarse nada.
 3. Revisa los totales y el anticipo (50% por defecto).
 4. **Descargar PDF**, o **Enviar por WhatsApp**.
 
-En el celular, "Enviar por WhatsApp" abre el menú de compartir con el PDF ya adjunto.
-En la laptop descarga el PDF y abre WhatsApp Web con el mensaje escrito, para que ahí
-adjuntes el archivo.
+### Sobre el botón de WhatsApp
+
+Que el PDF se mande **ya adjunto** depende del navegador, no de la página: solo la hoja
+nativa de compartir puede adjuntar archivos, y no todos los navegadores la implementan.
+
+| Dónde | Qué pasa |
+|---|---|
+| iPhone y Android | Abre el menú de compartir con el **PDF ya adjunto** |
+| Mac con **Safari** | Igual: PDF ya adjunto |
+| Mac con Chrome o Firefox | Baja el PDF, copia el mensaje y abre WhatsApp; el archivo se adjunta a mano |
+| Windows | Igual que Chrome en Mac |
+
+Ningún navegador de escritorio permite que una página adjunte archivos a WhatsApp Web,
+así que ese paso manual no se puede evitar — en Mac se resuelve usando Safari. La página
+avisa debajo del botón qué va a hacer en ese dispositivo.
 
 ### Dejarlo como app en el celular
 
