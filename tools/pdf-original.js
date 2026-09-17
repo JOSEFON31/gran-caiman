@@ -18,7 +18,6 @@ export const GEO = {
   lineH: 13, // spacing.line 260 twips
   fontSize: 10, // size 20 (medios puntos)
   baseOffset: 10, // del borde superior de la línea a la línea base
-  blancoCompacto: 5, // separación del cierre cuando el hotel completo no cabe en 2 hojas
   colRoom: [62.5, 82.2, 62.5, 37.5, 62.5], // COLW: 1250,1644,1250,750,1250
   // SW del .docx es [222.2, 85], pero esos 85pt solo alcanzaban porque la
   // plantilla traía ceros de relleno: $18,200.00 MXN mide 74.5pt contra 74.2pt
@@ -218,10 +217,7 @@ const just = (doc, ctx, runs) => parrafo(doc, ctx, runs, { align: 'justify' });
 
 /**
  * @param filas  array de arrays de celda: string, o {text, bold}
- * @param opts   {cols, aligns, padY, minH, repetirEncabezado, mantenerJunta}
- *
- * `mantenerJunta`: si la tabla completa no cabe en lo que queda de la hoja pero
- * sí en una hoja nueva, se pasa entera a la siguiente en vez de partirse.
+ * @param opts   {cols, aligns, padY, minH, repetirEncabezado}
  */
 function tabla(doc, ctx, filas, opts) {
   const cols = opts.cols;
@@ -245,16 +241,6 @@ function tabla(doc, ctx, filas, opts) {
   doc.setDrawColor(0, 0, 0);
   doc.setLineWidth(0.75); // BorderStyle.SINGLE size 6 = 0.75 pt
 
-  let seMovio = false;
-  if (opts.mantenerJunta) {
-    const altoTotal = medidas.reduce((s, m) => s + m.alto, 0);
-    const cabeEnHojaNueva = altoTotal <= ctx.limite - GEO.marginT;
-    if (ctx.y + altoTotal > ctx.limite && cabeEnHojaNueva) {
-      ctx.nuevaPagina();
-      seMovio = true;
-    }
-  }
-
   for (let f = 0; f < medidas.length; f++) {
     const { celdas, alto } = medidas[f];
     if (ctx.y + alto > ctx.limite) {
@@ -267,7 +253,6 @@ function tabla(doc, ctx, filas, opts) {
     pintarFila(doc, ctx, celdas, alto, cols, aligns, padY);
   }
   doc.setTextColor(0, 0, 0);
-  return seMovio;
 }
 
 function pintarFila(doc, ctx, celdas, alto, cols, aligns, padY) {
@@ -323,33 +308,12 @@ const COLUMNAS = [
  * @returns {object} el documento jsPDF
  */
 export function buildPdf(state, jsPDFCtor, sidebarDataUrl) {
-  const normal = construir(state, jsPDFCtor, sidebarDataUrl, GEO.lineH);
-
-  // Con el hotel completo (los 5 tipos) la tabla de importes se pasa a la hoja 2 y
-  // al cierre le faltan unas cuantas líneas para caber. Solo en ese caso se prueba
-  // con separaciones más cortas entre párrafos del cierre, y se usa esa versión
-  // únicamente si de verdad ahorra la hoja. Una cotización normal nunca entra aquí.
-  if (normal.importesMovidos && normal.doc.getNumberOfPages() > 2) {
-    const compacto = construir(state, jsPDFCtor, sidebarDataUrl, GEO.blancoCompacto);
-    if (compacto.doc.getNumberOfPages() < normal.doc.getNumberOfPages()) return compacto.doc;
-  }
-  return normal.doc;
-}
-
-/** Arma el documento. `blancoCierre` es el alto de los renglones en blanco del cierre. */
-function construir(state, jsPDFCtor, sidebarDataUrl, blancoCierre) {
   const doc = new jsPDFCtor({ unit: 'pt', format: 'letter', compress: true });
   doc.setFontSize(GEO.fontSize);
   doc.setFont('helvetica', 'normal');
 
   const ctx = crearContexto(doc, sidebarDataUrl);
   ctx.fondo();
-
-  // Renglón en blanco del cierre: normalmente mide lo mismo que una línea.
-  const sep = () => {
-    ctx.asegurar(blancoCierre);
-    ctx.y += blancoCierre;
-  };
 
   const hotel = state.hotel || {};
   const firma = state.firma || {};
@@ -403,7 +367,6 @@ function construir(state, jsPDFCtor, sidebarDataUrl, blancoCierre) {
   ctx.blanco();
 
   // --- Tabla de habitaciones cotizadas -------------------------------------
-  let importesMovidos = false;
   if (rows.length) {
     tabla(
       doc,
@@ -443,22 +406,15 @@ function construir(state, jsPDFCtor, sidebarDataUrl, blancoCierre) {
       { text: money(anticipo), bold: true },
     ]);
 
-    // Con los 5 tipos a la vez (hotel completo) la tabla ya no cabe en la hoja 1:
-    // partida, dejaba el renglón del anticipo solo en una hoja casi vacía.
-    importesMovidos = tabla(doc, ctx, filas, {
+    tabla(doc, ctx, filas, {
       cols: GEO.colSum,
       aligns: ['left', 'right'],
       padY: GEO.cellPadYSum,
-      mantenerJunta: true,
     });
   }
 
   // --- Página 2 -------------------------------------------------------------
-  // El cierre empieza en hoja nueva. Solo cuando la tabla de importes tuvo que
-  // pasarse entera a la hoja 2, el cierre la sigue ahí mismo en vez de abrir una
-  // tercera. En cualquier otro caso el flujo es el de siempre.
-  if (importesMovidos) sep();
-  else ctx.nuevaPagina();
+  ctx.nuevaPagina();
 
   just(doc, ctx, [
     {
@@ -468,9 +424,9 @@ function construir(state, jsPDFCtor, sidebarDataUrl, blancoCierre) {
         'respetar la capacidad. Muchas gracias por su comprensión.',
     },
   ]);
-  sep();
+  ctx.blanco();
   just(doc, ctx, '*Las fechas pueden ajustarse de acuerdo con su preferencia y disponibilidad.*');
-  sep();
+  ctx.blanco();
   just(doc, ctx, [
     {
       text:
@@ -481,7 +437,7 @@ function construir(state, jsPDFCtor, sidebarDataUrl, blancoCierre) {
         'disponibilidad al momento de su confirmación.',
     },
   ]);
-  sep();
+  ctx.blanco();
 
   parrafo(doc, ctx, 'Servicios incluidos');
   parrafo(
@@ -491,7 +447,7 @@ function construir(state, jsPDFCtor, sidebarDataUrl, blancoCierre) {
       'placentera, entre los cuales se incluyen:',
   );
   for (const s of state.servicios || []) parrafo(doc, ctx, `- ${s}`);
-  sep();
+  ctx.blanco();
 
   just(
     doc,
@@ -499,11 +455,11 @@ function construir(state, jsPDFCtor, sidebarDataUrl, blancoCierre) {
     'Ambiente relajante y acogedor, ideal para descansar y disfrutar de un oasis de ' +
       'tranquilidad cercas del mar.',
   );
-  sep();
+  ctx.blanco();
 
   parrafo(doc, ctx, [{ text: 'Condiciones generales', bold: true }]);
   for (const c of state.condiciones || []) parrafo(doc, ctx, `- ${c}`);
-  sep();
+  ctx.blanco();
 
   just(
     doc,
@@ -511,7 +467,7 @@ function construir(state, jsPDFCtor, sidebarDataUrl, blancoCierre) {
     'Agradecemos su atención y quedamos a sus órdenes para cualquier información adicional o ' +
       'para confirmar su reservación.',
   );
-  sep();
+  ctx.blanco();
 
   parrafo(doc, ctx, [{ text: 'Atentamente,', bold: true }]);
   parrafo(doc, ctx, firma.nombre || '');
@@ -519,7 +475,7 @@ function construir(state, jsPDFCtor, sidebarDataUrl, blancoCierre) {
   parrafo(doc, ctx, firma.celular || '');
   parrafo(doc, ctx, firma.telefono || '');
 
-  return { doc, importesMovidos };
+  return doc;
 }
 
 /** Nombre de archivo tipo Cotizacion_Juan_Perez_2026-09-03.pdf */

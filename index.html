@@ -63,6 +63,19 @@
     <section class="tarjeta">
       <h2><span class="num">2</span> Habitaciones</h2>
       <div class="cuerpo">
+        <div class="combo-caja">
+          <div class="campo" style="max-width:220px">
+            <label for="combo-personas">¿Para cuántas personas?</label>
+            <input type="number" id="combo-personas" min="1" step="1" inputmode="numeric"
+                   placeholder="Ej. 45">
+          </div>
+          <p class="ayuda" style="margin:6px 0 0">
+            Te muestro todas las combinaciones de cuartos que alcanzan. Toca
+            <b>Usar</b> en la que quieras y se llenan las cantidades de abajo.
+          </p>
+          <div id="combinaciones"></div>
+        </div>
+
         <p class="ayuda" style="margin:0 0 12px">
           Pon cuántas habitaciones de cada tipo le vas a cotizar. Las que dejes en
           <b>0</b> no salen en el PDF. Puedes cambiar tarifas y descripciones.

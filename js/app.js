@@ -2,11 +2,13 @@
 
 import {
   HOTEL, FIRMA, HABITACIONES, SERVICIOS, CONDICIONES, ANTICIPO_PCT, COLUMNAS_HABITACIONES,
+  TIPOS_ORIGINALES,
 } from './defaults.js';
 import {
   buildPdf, calcularTotales, cotizadas, nombreArchivo, money, moneyPlain,
   fechaLarga, rangoFechas, mesAnio, GEO,
 } from './pdf.js';
+import { combinaciones, ordenar, personasDeOcupacion } from './combinaciones.js';
 
 const $ = (id) => document.getElementById(id);
 const CLAVE = 'granCaiman.preferencias.v1';
@@ -74,8 +76,12 @@ function guardarPreferencias() {
       firma: state.firma,
       servicios: state.servicios,
       condiciones: state.condiciones,
-      habitaciones: state.habitaciones.map(({ tipo, descripcion, ocupacion, personas, tarifa }) =>
-        ({ tipo, descripcion, ocupacion, personas, tarifa })),
+      habitaciones: state.habitaciones.map(
+        ({ tipo, descripcion, ocupacion, personas, tarifa, unidades }) =>
+          ({ tipo, descripcion, ocupacion, personas, tarifa, unidades })),
+      // Qué tipos de fábrica ya conocía este navegador: así, cuando se agregue uno
+      // nuevo, se le muestra una vez, y uno borrado a propósito no revive.
+      tiposConocidos: HABITACIONES.map((h) => h.tipo),
     }));
   } catch (e) { /* modo privado o almacenamiento bloqueado: no pasa nada */ }
 }
@@ -94,6 +100,7 @@ function cargarPreferencias() {
   if (Array.isArray(guardado.servicios)) state.servicios = guardado.servicios;
   if (Array.isArray(guardado.condiciones)) state.condiciones = guardado.condiciones;
   if (Array.isArray(guardado.habitaciones) && guardado.habitaciones.length) {
+    const deFabrica = new Map(HABITACIONES.map((h) => [h.tipo.toLowerCase(), h]));
     state.habitaciones = guardado.habitaciones.map((h) => ({
       tipo: h.tipo || '',
       descripcion: h.descripcion || '',
@@ -101,7 +108,26 @@ function cargarPreferencias() {
       personas: Number(h.personas) || 0,
       tarifa: Number(h.tarifa) || 0,
       cantidad: 0,
+      // Lo guardado antes no traía cuántos cuartos hay: se toma el de fábrica
+      // si el tipo coincide por nombre, y 1 para los que agregó el usuario.
+      unidades: Number.isFinite(Number(h.unidades)) && h.unidades !== undefined
+        ? Math.max(0, Number(h.unidades))
+        : (deFabrica.get(String(h.tipo).toLowerCase())?.unidades ?? 1),
     }));
+
+    // Tipos nuevos de fábrica que este navegador nunca vio (p. ej. el nupcial).
+    // Los datos guardados antes de este campo conocían solo la lista original.
+    const conocidos = new Set(
+      (Array.isArray(guardado.tiposConocidos) ? guardado.tiposConocidos : TIPOS_ORIGINALES)
+        .map((t) => String(t).toLowerCase()),
+    );
+    const presentes = new Set(state.habitaciones.map((h) => h.tipo.toLowerCase()));
+    for (const h of HABITACIONES) {
+      const clave = h.tipo.toLowerCase();
+      if (!conocidos.has(clave) && !presentes.has(clave)) {
+        state.habitaciones.push({ ...h });
+      }
+    }
   }
 }
 
@@ -138,6 +164,11 @@ function pintarHabitaciones() {
           <input type="number" data-campo="tarifa" min="0" step="1" inputmode="decimal"
                  value="${Number(h.tarifa) || 0}">
         </div>
+        <div class="campo">
+          <label>Cuartos en el hotel</label>
+          <input type="number" data-campo="unidades" min="0" step="1" inputmode="numeric"
+                 value="${Number(h.unidades) || 0}">
+        </div>
       </div>
       <div class="hab-importe">
         <span>${Number(h.cantidad) > 0
@@ -157,9 +188,13 @@ function alCambiarHabitacion(e) {
   const h = state.habitaciones[Number(caja.dataset.i)];
   if (!h) return;
 
-  h[campo] = (campo === 'cantidad' || campo === 'tarifa')
+  h[campo] = (campo === 'cantidad' || campo === 'tarifa' || campo === 'unidades')
     ? Math.max(0, Number(e.target.value) || 0)
     : e.target.value;
+
+  // El número de personas por cuarto sale del texto de "Ocupación máxima". Antes
+  // un tipo agregado desde la pantalla se quedaba en 2 para siempre.
+  if (campo === 'ocupacion') h.personas = personasDeOcupacion(h.ocupacion, h.personas);
 
   if (campo === 'cantidad') {
     caja.classList.toggle('activa', h.cantidad > 0);
@@ -180,6 +215,104 @@ function actualizarImporteFila(caja, h) {
   fila.children[1].textContent = activa
     ? money(Number(h.cantidad) * (state.noches || 0) * Number(h.tarifa))
     : '';
+}
+
+// --------------------------------------------------------------------------
+// Combinaciones posibles para N personas
+// --------------------------------------------------------------------------
+
+const PRIMERAS = 10;
+const combo = { personas: 0, criterio: 'costo', verTodas: false, lista: [] };
+
+const CRITERIOS = [
+  ['costo', 'Más barata'],
+  ['habitaciones', 'Menos cuartos'],
+  ['ajuste', 'Mejor ajuste'],
+];
+
+function pintarCombinaciones() {
+  const cont = $('combinaciones');
+  if (!cont) return;
+
+  if (!combo.personas) {
+    combo.lista = [];
+    cont.innerHTML = '';
+    return;
+  }
+
+  const tipos = state.habitaciones.map((h, indice) => ({
+    indice,
+    tipo: h.tipo,
+    personas: Number(h.personas) || 0,
+    unidades: Number(h.unidades) || 0,
+    tarifa: Number(h.tarifa) || 0,
+  }));
+  const r = combinaciones(tipos, combo.personas, state.noches);
+
+  if (!r.factible) {
+    combo.lista = [];
+    cont.innerHTML = `<div class="aviso error">
+      No caben ${combo.personas} personas: el hotel tiene lugar para ${r.capacidad}
+      ${r.faltan ? `(faltan ${r.faltan})` : ''}. Revisa "Cuartos en el hotel" de cada tipo.
+    </div>`;
+    return;
+  }
+
+  combo.lista = ordenar(r.lista, combo.criterio);
+  const visibles = combo.verTodas ? combo.lista : combo.lista.slice(0, PRIMERAS);
+  const noches = Number(state.noches) || 0;
+
+  cont.innerHTML = `
+    <div class="combo-cab">
+      <b>${r.total} ${r.total === 1 ? 'combinación posible' : 'combinaciones posibles'}</b>
+      para ${combo.personas} personas
+      ${r.truncado ? '<span class="ayuda">(se muestran las primeras)</span>' : ''}
+    </div>
+    <div class="combo-chips" role="group" aria-label="Ordenar combinaciones">
+      ${CRITERIOS.map(([c, t]) => `
+        <button type="button" class="chip ${c === combo.criterio ? 'activo' : ''}"
+                data-criterio="${c}" aria-pressed="${c === combo.criterio}">${t}</button>`).join('')}
+    </div>
+    <ol class="combo-lista">
+      ${visibles.map((c, i) => `
+        <li class="combo">
+          <div class="combo-desc">
+            <b>${esc(c.lineas.map((l) => `${l.cantidad} ${l.tipo}`).join(' + '))}</b>
+            <span class="ayuda">
+              ${c.habitaciones} ${c.habitaciones === 1 ? 'cuarto' : 'cuartos'} ·
+              ${c.capacidad} lugares${c.sobran ? ` · sobran ${c.sobran}` : ''}
+            </span>
+          </div>
+          <div class="combo-precio">
+            <b>${moneyPlain(c.costoNoche)}</b><span class="ayuda"> / noche</span>
+            ${noches ? `<span class="ayuda">${money(c.costoTotal)} por ${noches} ${noches === 1 ? 'noche' : 'noches'}</span>` : ''}
+          </div>
+          <button type="button" class="btn usar" data-combo="${i}">Usar</button>
+        </li>`).join('')}
+    </ol>
+    ${r.total > PRIMERAS
+      ? `<button type="button" class="btn ancho" id="combo-mas">
+           ${combo.verTodas ? 'Ver solo las primeras' : `Ver todas (${r.total})`}
+         </button>`
+      : ''}`;
+}
+
+function aplicarCombinacion(indiceVisible) {
+  const c = combo.lista[indiceVisible];
+  if (!c) return;
+  for (const h of state.habitaciones) h.cantidad = 0;
+  for (const l of c.lineas) {
+    const h = state.habitaciones[l.indice];
+    if (h) h.cantidad = l.cantidad;
+  }
+  // El grupo es el que se capturó, no la capacidad de los cuartos: si sobra un
+  // lugar, el PDF debe decir "grupo de 45 personas", no de 46.
+  state.personas = combo.personas;
+  state.personasManual = true;
+  $('personas').value = state.personas;
+  refrescar();
+  mensaje(`Listo: ${c.lineas.map((l) => `${l.cantidad} ${l.tipo}`).join(' + ')}.`, 'ok');
+  $('habitaciones').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 // --------------------------------------------------------------------------
@@ -338,6 +471,7 @@ function escalarVista() {
 
 function refrescar(opts = {}) {
   if (!opts.saltarHabitaciones) pintarHabitaciones();
+  pintarCombinaciones();
   pintarAyudas();
   pintarTotales();
   pintarVista();
@@ -622,10 +756,30 @@ function conectar() {
   $('btn-agregar').addEventListener('click', () => {
     state.habitaciones.push({
       tipo: 'Nuevo tipo', descripcion: '', ocupacion: '2 personas',
-      personas: 2, cantidad: 0, tarifa: 0,
+      personas: 2, cantidad: 0, tarifa: 0, unidades: 1,
     });
     guardarPreferencias();
     refrescar();
+  });
+
+  $('combo-personas').addEventListener('input', (e) => {
+    combo.personas = Math.max(0, Math.floor(Number(e.target.value) || 0));
+    combo.verTodas = false;
+    pintarCombinaciones();
+  });
+
+  $('combinaciones').addEventListener('click', (e) => {
+    const boton = e.target.closest('button');
+    if (!boton) return;
+    if (boton.dataset.criterio) {
+      combo.criterio = boton.dataset.criterio;
+      pintarCombinaciones();
+    } else if (boton.dataset.combo !== undefined) {
+      aplicarCombinacion(Number(boton.dataset.combo));
+    } else if (boton.id === 'combo-mas') {
+      combo.verTodas = !combo.verTodas;
+      pintarCombinaciones();
+    }
   });
 
   $('btn-reset').addEventListener('click', () => {

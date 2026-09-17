@@ -478,3 +478,64 @@ input[type='number'] { -moz-appearance: textfield; }
   clip: rect(0 0 0 0);
   white-space: nowrap;
 }
+
+/* ---------- Combinaciones posibles ---------- */
+
+.combo-caja {
+  border: 1px dashed var(--borde-fuerte);
+  border-radius: var(--radio);
+  padding: 12px;
+  margin-bottom: 14px;
+  background: var(--superficie-2);
+}
+
+.combo-cab { margin-top: 12px; font-size: 14px; }
+
+.combo-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 10px; }
+
+.chip {
+  border: 1px solid var(--borde-fuerte);
+  background: var(--superficie);
+  color: var(--tenue);
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.chip.activo { background: var(--verde); border-color: var(--verde); color: var(--acento-texto); }
+
+.combo-lista {
+  list-style: none;
+  margin: 0 0 10px;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+  max-height: 460px;
+  overflow-y: auto;
+}
+
+.combo {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border: 1px solid var(--borde);
+  border-radius: 8px;
+  background: var(--superficie);
+}
+
+.combo-desc, .combo-precio { display: flex; flex-direction: column; min-width: 0; }
+.combo-desc b { font-size: 14px; }
+.combo-precio { text-align: right; font-variant-numeric: tabular-nums; }
+.combo .ayuda { font-size: 12px; color: var(--tenue); }
+
+.btn.usar { min-height: 36px; padding: 6px 12px; font-size: 13px; }
+
+/* En celular el precio y el botón bajan a su propio renglón. */
+@media (max-width: 520px) {
+  .combo { grid-template-columns: 1fr auto; }
+  .combo-desc { grid-column: 1 / -1; }
+  .combo-precio { text-align: left; }
+}

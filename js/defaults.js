@@ -17,6 +17,8 @@ export const FIRMA = {
 };
 
 // Tarifas base por tipo de habitación. El usuario las puede modificar en la página.
+// `unidades` es cuántos cuartos de ese tipo tiene el hotel: lo usan las combinaciones.
+// Los tipos nuevos van AL FINAL, para no recorrer posiciones.
 export const HABITACIONES = [
   {
     tipo: 'Sencilla',
@@ -25,6 +27,7 @@ export const HABITACIONES = [
     personas: 2,
     cantidad: 0,
     tarifa: 900,
+    unidades: 3,
   },
   {
     tipo: 'Triple',
@@ -33,6 +36,7 @@ export const HABITACIONES = [
     personas: 3,
     cantidad: 0,
     tarifa: 1200,
+    unidades: 10,
   },
   {
     tipo: 'Cuadruple',
@@ -41,6 +45,7 @@ export const HABITACIONES = [
     personas: 4,
     cantidad: 0,
     tarifa: 1500,
+    unidades: 8,
   },
   {
     tipo: 'Bungalow',
@@ -50,8 +55,23 @@ export const HABITACIONES = [
     personas: 5,
     cantidad: 0,
     tarifa: 2600,
+    unidades: 2,
+  },
+  {
+    tipo: 'Nupcial',
+    descripcion: '1 cama nupcial',
+    ocupacion: '2 personas',
+    personas: 2,
+    cantidad: 0,
+    tarifa: 1400,
+    unidades: 1,
   },
 ];
+
+// Los tipos que existían antes de que cada navegador guardara cuáles conocía.
+// Sirve para mostrarle los tipos nuevos (como el nupcial) a quien ya había usado
+// la página, sin revivir uno que haya borrado a propósito.
+export const TIPOS_ORIGINALES = ['Sencilla', 'Triple', 'Cuadruple', 'Bungalow'];
 
 export const SERVICIOS = [
   'Internet de alta velocidad Starlink',
